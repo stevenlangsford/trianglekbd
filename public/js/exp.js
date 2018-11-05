@@ -2,6 +2,8 @@
 var trials = [];
 var trialindex = 0;
 const canvassize = 150*3;//roughly three max triangle widths. Which is more than you need 'cause they're in a circle not a line.
+var scalefactor = 100; //stim descriptions are in stan/brain friendly numbers near one, mult by scalefactor to get screen-friendly numbers in px.
+//Anything in trials[] needs a .drawMe(divname) and a .getResponse(event.key). There are currently three types of trial obj, a triad (trialobj), a pair (pairobj) and spacer with instructions/message and a continue button (spacerobj). Note trialindex is incremented in the getResponse right before calling nextTrial(): this is annoyingly repetitive/scattered, but means trialindex always refers to the current trial, some global admin relies on this being true.
 
 //admin/helper functions
 function shuffle(a) { //via https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
@@ -20,6 +22,21 @@ function keyboardListener(event) {
     if(trialindex<trials.length)trials[trialindex].getResponse(event.key);
 }
 document.addEventListener('keydown', keyboardListener)
+
+function timeoutfeedback(){ //creates visual feedback on overdue time trials (as a global fn 'cause it's awkward for trialobjs to manage this themselves)
+    if(trialindex<trials.length){
+	if(Date.now()- trials[trialindex].drawtime > trials[trialindex].timelimit){
+	    document.getElementById("stimframe").style.border="2px solid red";
+	}
+    }
+    setTimeout(timeoutfeedback,20); //rinse and repeat.
+}
+timeoutfeedback();// checks every 20ms if the current trial has timed out and gives visual feedback if it has. A response is still needed to continue, so timeout trials get recorderd as normal but with 'timedout' flag in output set to true.
+
+function drawpausemask_thennexttrial(){
+    document.getElementById("uberdiv").innerHTML= "<h3>Use the arrow keys to select the largest triangle</h3><h1>+</h1>";
+    setTimeout(nextTrial,500);
+}
 
 function nextTrial(){
     if(trialindex<trials.length){
@@ -82,7 +99,7 @@ function triangle(base,height,templatetype, orientation){
 	function linelength(x1,y1,x2,y2){
 	    var a = x2-x1;
 	    var b = y2-y1;
-	    return Math.sqrt(a*a+b*b)
+	    return Math.sqrt(a*a+b*b);
 	}
 	var a = linelength(this.x1,this.y1,this.x2,this.y2);
 	var b = linelength(this.x2,this.y2,this.x3,this.y3);
@@ -147,12 +164,111 @@ function triangle(base,height,templatetype, orientation){
     }
 }//end triangle
 
-function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid){
+var increment_continue = function(){trialindex++; nextTrial()};//can't do this inline in onclick, but can define here and use in onclick, whatevs. sigh.
+
+function spacerobj (message){
+    this.message = message;
+    this.drawMe = function(divname){
+	document.getElementById(divname).innerHTML = "<h3>"+this.message+"</h3><button onclick=increment_continue()>Continue</button>";
+    }
+    this.getResponse = function(eventkey){
+	return;
+    }
+}
+
+function pairobj(x1,y1,x2,y2,template1,template2,stimid){
+    this.x1=x1;
+    this.y1=y1;
+    this.x2=x2;
+    this.y2=y2;
+    this.template1=template1;
+    this.template2=template2;
+    this.stimid=stimid;
+    this.presentation_position = shuffle([0,1]);
+    
+    this.triangles = [new triangle(x1*scalefactor,y1*scalefactor,template1,shuffle([0,1,2,3])),
+		      new triangle(x2*scalefactor,y2*scalefactor,template2,shuffle([0,1,2,3]))];
+
+    this.drawMe = function(targdiv){
+	this.drawtime=Date.now();
+	document.getElementById(targdiv).innerHTML = "<div><h3>Use the arrow keys to select the largest triangle</h3><table style='border:solid 3px black; margin:0 auto'>"+//haha, tables. Oh dear.
+"<tr><td align='left' class='buttontd'>"+
+    "<span class='kbdprompt' id='aside'><img src='img/leftarrow.png' height=50,width=50></span>"+
+    "</td>"+
+    "<td><canvas id='stimleft' width='"+canvassize/1.5+"' height='"+canvassize/1.5+"'></canvas></td>"+
+    "<td><canvas id='stimright' width='"+canvassize/1.5+"' height='"+canvassize/1.5+"'></canvas></td>"+
+    "<td align='right' class='buttontd'>"+
+    "<span class='kbdprompt' id='lside'><img src='img/rightarrow.png' height=50,width=50></span>"+
+    "</td></tr>"+
+    "<tr><td colspan='5'><img src='img/uparrow.png' height=50,width=50> <br/> They're equal</td></tr>"+
+    "</table></div>";
+
+	var leftcanvas = document.getElementById('stimleft');
+	var rightcanvas = document.getElementById('stimright');
+	var jitter = 10;
+	this.triangles[this.presentation_position[0]].drawme(leftcanvas,
+							     leftcanvas.width/2-this.triangles[this.presentation_position[0]].leftmost()/2+Math.random()*jitter-jitter/2,
+							     leftcanvas.height/2-this.triangles[this.presentation_position[0]].lowest()/2+Math.random()*jitter-jitter/2,
+							     "black");
+	this.triangles[this.presentation_position[1]].drawme(rightcanvas,
+							     rightcanvas.width/2-this.triangles[this.presentation_position[1]].leftmost()/2+Math.random()*jitter-jitter/2,
+							     rightcanvas.height/2-this.triangles[this.presentation_position[1]].lowest()/2+Math.random()*jitter-jitter/2,
+							     "black");
+	
+    }
+    
+    this.getResponse = function(aresponse){
+		switch(aresponse){
+		case("ArrowLeft"):
+		    choiceindex=this.presentation_position[0];
+		    break;
+		case("ArrowRight"):
+		    choiceindex=this.presentation_position[1];
+		    break;
+		case("ArrowDown"):
+		    choiceindex=2;
+		    break;
+		default:
+		    console.log("Bad response: "+aresponse);
+		    return; //filter to legal responses.
+		}
+
+	var output = {};
+	output.x1=this.x1;
+	output.y1=this.y1;
+	output.x2=this.x2;
+	output.y2=this.y2;
+	output.template1=this.template1;
+	output.template2=this.template2;
+	output.stimid = this.stimid;
+	output.presentation_position=this.presentation_position;
+	output.responsekey=aresponse;
+
+	output.template_chosen = [this.template1,this.template2,"equal"][choiceindex];
+	output.template_alt = [this.template2,this.template1,"equal"][choiceindex];
+	output.area_chosen = [0.5*this.x1*this.y1,0.5*this.x2*this.y2,"equal"][choiceindex];
+	output.area_alt = [0.5*this.x2*this.y2,0.5*this.x1*this.y1,"equal"][choiceindex];
+
+	output.drawtime = this.drawtime;
+	output.responsetime = Date.now();
+	output.responseinterval = output.responsetime-output.drawtime;
+
+	//TODO save response to db
+	console.log(output);
+	
+	trialindex++;
+	drawpausemask_thennexttrial();
+
+    }//end getresponse
+}//end pairobj
+
+function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelimit){
     this.drawtime = "init";
+    this.timelimit = timelimit;
     this.shape_mapping = shuffle(["rightangle","equilateral","skew"]);//note randomized just once at creation... if you repeat stim by revisting a trialobj, this choice will stay the same. No plans to revisit stim though ATM?
     this.orientations = orientations;
     
-    var scalefactor = 100;
+    //scalefactor converts from stan/brain friendly numbers around 1 to pixels, defined in global vars up top.
     x1=x1*scalefactor;
     x2=x2*scalefactor;
     x3=x3*scalefactor;
@@ -176,13 +292,13 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid){
 
     this.drawMe = function(targdiv){
 	this.drawtime=Date.now();
-	document.getElementById(targdiv).innerHTML = "<h3>Use the arrow keys to select the largest triangle</h3><table style='border:solid 3px black'>"+//haha, tables. Oh dear.
+	document.getElementById(targdiv).innerHTML = "<h3>Use the arrow keys to select the largest triangle</h3><table id='stimframe' style='border:solid 3px black'>"+//haha, tables. Oh dear.
 	"<tr><td colspan='2' align='center' class='buttontd'><img src='img/uparrow.png' height=50,width=50></td></tr>"+
 	    "<tr><td colspan='2' align='center'><canvas id='stimcanvas' width='"+canvassize+"' height='"+(canvassize*.9)+"'></canvas></td></tr>"+
 	    "<tr><td align='left' class='buttontd'><img src='img/leftarrow.png' height=50,width=50></td><td align='right' class='buttontd'><img src='img/rightarrow.png' height=50,width=50></td></tr>";
 	
 	var d = canvassize/5; //distance apart
-	var jitter = 10; //jitter less critical now that there's no clear alignment issue, but might be nice mitigation of possible orientation dist-artifacts.
+	var jitter = 10; //jitter less critical now that there's no clear alignment issue, but might be nice mitigation of possible orientation/distance artifacts.
 	var rot_offset = Math.PI;
 	var center_x = canvassize/2;
 	var center_y = canvassize/2;
@@ -210,7 +326,7 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid){
 	this.triangles[this.presentation_position[2]].drawme(document.getElementById('stimcanvas'),
 							jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[2]].drawoffset_x()+d*Math.cos(4.0/3.0*Math.PI),
 							jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[2]].drawoffset_y()+d*Math.sin(4.0/3.0*Math.PI),
-							"black"); //colors useful for diag/dev. Could also be used as a fun manipulation to do things to the similarity structure? Could be a fun companion study?
+							"black"); //colors useful for diag/dev. Could also be used as a fun manipulation to do things to the similarity structure?
 	
 	//diag center pointer:
 	// var ctx = document.getElementById('stimcanvas').getContext('2d');
@@ -251,10 +367,12 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid){
 
 	//Things you want to write out: response sensitive.
 	var output = {};
+	output.timelimit = this.timelimit;
 	output.responsekey= aresponse;
 	output.responsetime = Date.now();
 	output.drawtime = this.drawtime;
 	output.responseinterval = output.responsetime - output.drawtime;
+	output.timedout = output.responseinterval > output.timelimit;
 	output.ppntID = localStorage.getItem("ppntID");
 	
 	output.area_chosen= this.triangles[choiceindex].area();
@@ -289,14 +407,26 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid){
 	//     });
 
 	trialindex++;
-	nextTrial();
-
+	if(output.responseinterval>timelimit){
+	    //show the annoying timeout message:
+	    document.getElementById("uberdiv").innerHTML="<p style='background-color:red; font-size=2em;'>"+
+		"This is a timed block! Please be as accurate as you can without going over the "+Math.round(timelimit/1000)+" second time limit."+
+	    "</p>";
+	    setTimeout(nextTrial,4000);
+	}else{
+	    drawpausemask_thennexttrial();
+	}
     }
 }//end trialobj
 
 //end stim setup.
 //****************************************************************************************************
 //MAIN
-trials.push(new trialobj(1,1,1.2,.8,1,.7,[0,1,2],["oneone","1p2,p8","1,p7"],[0,0,0],"test1"))
+trials=trials.concat([
+    new pairobj(1,1,1.2,1.3,"equilateral","skew","demopair"),
+    new spacerobj("Welcome to the demo test"),
+    new trialobj(1,1,1.2,.8,1,.7,[0,1,2],["oneone","1p2,p8","1,p7"],[0,0,0],"test1",Infinity),
+    new trialobj(1,1,1.2,.8,1,.7,[0,1,2],["oneone","1p2,p8","1,p7"],[0,0,0],"test1",2000)
+])
 
 nextTrial();//go! Walks through each trial calling drawme and directing kbd responses to the current trialobj.

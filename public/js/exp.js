@@ -4,7 +4,7 @@ var trialindex = 0;
 const canvassize = 150*3;//roughly three max triangle widths. Which is more than you need 'cause they're in a circle not a line.
 var scalefactor = 100; //stim descriptions are in stan/brain friendly numbers near one, mult by scalefactor to get screen-friendly numbers in px.
 //Anything in trials[] needs a .drawMe(divname) and a .getResponse(event.key). There are currently three types of trial obj, a triad (trialobj), a pair (pairobj) and spacer with instructions/message and a continue button (spacerobj). Note trialindex is incremented in the getResponse right before calling nextTrial(): this is annoyingly repetitive/scattered, but means trialindex always refers to the current trial, some global admin relies on this being true.
-
+var keyslive = false; //turned on by drawMe, turned off by getResponse.
 //admin/helper functions
 function shuffle(a) { //via https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
     var j, x, i;
@@ -19,7 +19,7 @@ function shuffle(a) { //via https://stackoverflow.com/questions/6274339/how-can-
 
 function keyboardListener(event) {
     var x = event.key;
-    if(trialindex<trials.length)trials[trialindex].getResponse(event.key);
+    if(trialindex<trials.length & keyslive)trials[trialindex].getResponse(event.key);
 }
 document.addEventListener('keydown', keyboardListener)
 
@@ -190,6 +190,7 @@ function pairobj(x1,y1,x2,y2,template1,template2,stimid){
 		      new triangle(x2*scalefactor,y2*scalefactor,template2,shuffle([0,1,2,3]))];
 
     this.drawMe = function(targdiv){
+	keyslive = true;
 	this.drawtime=Date.now();
 	document.getElementById(targdiv).innerHTML = "<div><h3>Use the arrow keys to select the largest triangle</h3><table style='border:solid 3px black; margin:0 auto'>"+//haha, tables. Oh dear.
 "<tr><td align='left' class='buttontd'>"+
@@ -225,15 +226,17 @@ function pairobj(x1,y1,x2,y2,template1,template2,stimid){
 		case("ArrowRight"):
 		    choiceindex=this.presentation_position[1];
 		    break;
-		case("ArrowDown"):
+		case("ArrowUp"):
 		    choiceindex=2;
 		    break;
 		default:
 		    console.log("Bad response: "+aresponse);
 		    return; //filter to legal responses.
 		}
-
+	keyslive = false;
 	var output = {};
+	output.ppntID = localStorage.getItem("ppntID");
+	output.seqnumber = trialindex;
 	output.x1=this.x1;
 	output.y1=this.y1;
 	output.x2=this.x2;
@@ -292,6 +295,7 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 
     this.drawMe = function(targdiv){
 	this.drawtime=Date.now();
+	keyslive = true;
 	document.getElementById(targdiv).innerHTML = "<h3>Use the arrow keys to select the largest triangle</h3><table id='stimframe' style='border:solid 3px black'>"+//haha, tables. Oh dear.
 	"<tr><td colspan='2' align='center' class='buttontd'><img src='img/uparrow.png' height=50,width=50></td></tr>"+
 	    "<tr><td colspan='2' align='center'><canvas id='stimcanvas' width='"+canvassize+"' height='"+(canvassize*.9)+"'></canvas></td></tr>"+
@@ -362,12 +366,14 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	    console.log("Bad response: "+aresponse);
 	    return; //filter to legal responses.
 	}
+	keyslive=false;
 	var alt1 = (choiceindex+1)%3;//named just to make assigning stuff to the output obj super readable.
 	var alt2 = (choiceindex+2)%3;
 
 	//Things you want to write out: response sensitive.
 	var output = {};
 	output.timelimit = this.timelimit;
+	output.seqnumber = trialindex;
 	output.responsekey= aresponse;
 	output.responsetime = Date.now();
 	output.drawtime = this.drawtime;
@@ -421,12 +427,115 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 
 //end stim setup.
 //****************************************************************************************************
-//MAIN
-trials=trials.concat([
-    new pairobj(1,1,1.2,1.3,"equilateral","skew","demopair"),
-    new spacerobj("Welcome to the demo test"),
-    new trialobj(1,1,1.2,.8,1,.7,[0,1,2],["oneone","1p2,p8","1,p7"],[0,0,0],"test1",Infinity),
-    new trialobj(1,1,1.2,.8,1,.7,[0,1,2],["oneone","1p2,p8","1,p7"],[0,0,0],"test1",2000)
-])
+//Begin populate trials!
+//TRIAD STIM SETUP PARAMS
+var templatetypes = [[0,0,0],[0,0,1],[0,1,0],[1,0,0],[0,1,2]]; //all match, odd decoy, odd competitor, odd target, nothing-matches.
+var decoy_distances = [.4,.35,.3,.25,.2,.15,.1].map(Math.sqrt); //assume target and competitor are x=1,y=1,area = 1/2, this is brain-friendly and stan-friendly. Actual screen sizes are this * scalefactor. Sqrt just means these are expressed in terms of area, side lengths are targ[x,y]*decoy_distance, area is decoydistance of targ.
+var winner_distances = [1.1,1.2,1.3].map(Math.sqrt); //You don't need as many winner trials as test trials. .1 winners might be hard, interesting for accuracy, .2 and .3 are attn checks.
+var timelimit = 3500;
+
+//for each templatetype and each distance, generate an example (attraction-style) stim for time limited an no-limit conditions, randomizing orientations and whether the target is tall or wide.
+
+//storage bins
+var nolimit_trials = [];
+var limit_trials = [];
+
+//create stim
+for(var whichtemplate = 0; whichtemplate < templatetypes.length; whichtemplate++){
+    for(var whichdecoydist = 0; whichdecoydist<decoy_distances.length;whichdecoydist++){
+	//trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelimit){
+	var targlocation = Math.random()<0.5; //if true, targ is tall, if false, targ is wide.
+	var targX = targlocation ? 1 : .5;
+	var targY = targlocation ? .5 : 1;
+	var compX = targlocation ? .5 : 1;
+	var compY = targlocation ? 1 : .5;
+	var decoyX = targX*decoy_distances[whichdecoydist];
+	var decoyY = targY*decoy_distances[whichdecoydist];
+	nolimit_trials.push(new trialobj(targX,targY,
+					    compX,compY,
+					    decoyX,decoyY,
+					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+					 "att"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,Infinity]));
+		limit_trials.push(new trialobj(targX,targY,
+					    compX,compY,
+					    decoyX,decoyY,
+					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+					 "att"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,timelimit]));
+						    
+			       
+    }
+    for(var whichwinnerdist = 0; whichwinnerdist<winner_distances.length;whichwinnerdist++){
+	var targlocation = Math.random()<0.5; //if true, targ is tall, if false, targ is wide.
+	var targX = targlocation ? 1 : .5;
+	var targY = targlocation ? .5 : 1;
+	var compX = targlocation ? .5 : 1;
+	var compY = targlocation ? 1 : .5;
+	var decoyX = targX*winner_distances[whichwinnerdist];
+	var decoyY = targY*winner_distances[whichwinnerdist];
+
+	nolimit_trials.push(new trialobj(targX,targY,
+					    compX,compY,
+					    decoyX,decoyY,
+					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+					 "win"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,Infinity]));
+		limit_trials.push(new trialobj(targX,targY,
+					    compX,compY,
+					    decoyX,decoyY,
+					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+					 "win"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,timelimit]));
+    }
+}
+
+//PAIR SETUP PARAMS
+var pair_trials = [];
+var pairmin = .8;
+var pairmax = 1.2;
+
+var hm_eachpair = 6; //total stim is this * 9.
+
+var triangletypes = ["equilateral","rightangle","skew"];
+for(var rep=0;rep<hm_eachpair;rep++){
+
+    for(var i=0;i<triangletypes.length;i++){
+
+	for(var j=0;j<triangletypes.length;j++){
+
+	    var x1 = Math.random()*(pairmax-pairmin)+pairmin;
+	    var y1 =Math.random()*(pairmax-pairmin)+pairmin;
+	    var x2 = Math.random()*(pairmax-pairmin)+pairmin;
+	    var y2 = Math.random()*(pairmax-pairmin)+pairmin;
+	    var stimname = "pair"+
+		(Math.round(x1*100)/100)+
+		"_"+(Math.round(y1*100)/100)+
+		"_"+(Math.round(x2*100)/100)+
+		"_"+(Math.round(y2*100)/100)+
+		"_"+triangletypes[i]+triangletypes[j];
+
+	    pair_trials.push(new pairobj(x1,y1,x2,y2,
+					 triangletypes[i],triangletypes[j],
+					 stimname)
+			    )
+	}
+    }
+}//end for each rep
+
+
+shuffle(nolimit_trials)
+shuffle(limit_trials)
+shuffle(pair_trials)
+
+pair_trials = [new spacerobj("Please use the arrow keys to pick the triangle with the biggest area, or press the up arrow if they're the same.")].concat(pair_trials);
+nolimit_trials = [new spacerobj("These trials have no time limit. Please use the arrow keys to pick the triangle with the biggest area.")].concat(nolimit_trials)
+limit_trials = [new spacerobj("These are timed trials. Please use the arrow keys to pick the triangle with the biggest area. Please be as accurate as you can without going over the 3 second time limit. If you go over the time limit, an annoying reminder message will appear before the next trial.")].concat(limit_trials);
+
+var limitfirst = Math.random()<.5;
+
+trials = trials.concat([pair_trials, limitfirst ? limit_trials : nolimit_trials, limitfirst ? nolimit_trials : limit_trials]).flat();
+
+//end populate trails
 
 nextTrial();//go! Walks through each trial calling drawme and directing kbd responses to the current trialobj.

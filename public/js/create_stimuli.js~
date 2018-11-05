@@ -1,0 +1,2 @@
+var templatetypes = ["equilateral","rightangle","skew"]
+var maxdistance = .4; //assume target and competitor are x=1,y=1,area = 1/2, tihs is brain-friendly and stan-friendly. Actual screen sizes are this * scalefactor.

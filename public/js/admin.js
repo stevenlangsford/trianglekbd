@@ -1,11 +1,14 @@
 var ppntID = Math.round(Math.random()*10000000);
 localStorage.setItem("ppntID",ppntID); //cookie alternative, retrive with localStorage.getItem("ppntID"). Only stores strings. Used in exp.js to tag trials.
 
-var dev = true; //could consider putting this in localStorage too, in case you want some verbose diag messages elsewhere in testing.
+var dev = true; //could consider putting this in localStorage too, in case you want some verbose diag messages elsewhere in testing?
 var instructionindex = 0;
-var instructionlist = [dev ? "Development version: <button onclick='startExp()'>Skip instructions</button>" : "Hi! These are the instructions. Please read them carefully, there will be a short quiz at the end.", "This is part of a study being run by [INSTITUTION]. By clicking 'Next', you are agreeing to take part in it. You should know that you're free to withdraw at any time (although you'll only be paid on completion), and that although data gained from this study may be published, you will not be identified and your personal details will not be divulged, nor will anything be linked to your [RELEVANT ID].</br><span style=\"font-size:.8em\">Please direct any questions about this study to the principle investigator, [NAME:CONTACT]. For any questions regarding the ethics of the study, please contact the convener of the Subcommittee for Human Research in the School of Psychology at [INSTITUTION, NAME, CONTACT].</span>","This study takes about [TIME] minutes, please only continue if you have [TIME] free without interruptions.",
+var sst = function(){
+    $.post('/exp_triads',function(data){window.location.replace(data)});
+}
+var instructionlist = [dev ? "Development version: <button onclick='startExp()'>Skip instructions</button><button onclick='sst()'>Skip to triads</button>" : "Hi! These are the instructions. Please read them carefully, there will be a short quiz at the end.", "This is part of a study being run by [INSTITUTION]. By clicking 'Next', you are agreeing to take part in it. You should know that you're free to withdraw at any time (although you'll only be paid on completion), and that although data gained from this study may be published, you will not be identified and your personal details will not be divulged, nor will anything be linked to your [RELEVANT ID].</br><span style=\"font-size:.8em\">Please direct any questions about this study to the principle investigator, [NAME:CONTACT]. For any questions regarding the ethics of the study, please contact the convener of the Subcommittee for Human Research in the School of Psychology at [INSTITUTION, NAME, CONTACT].</span>","This study takes about [TIME] minutes, please only continue if you have [TIME] free without interruptions.",
 
-"Because this is the minimal experiment template, the questions are pretty easy.","There are only two of them, and they're pretty self explanatory.","You still have to do the demographics questions though."]
+		       "All the questions in this study ask you to choose the largest triangle, but there are a few different types.","In the first set of trials, there are two triangles, please tell us which one is largest using the keyboard. Hit the left arrow key for the one on the left and the right arrow key for the one on the right. You can also press the up arrow key to say the two triangles are equal, which will be the correct answer for some trials.", "The next set of trials will show you three triangles at a time, again, please choose the largest one. Again, pick a triangle by using the arrow keys to select the top, bottom-left, or bottom-right triangle.","One of these blocks will be under time pressure, the other one won't.","In the time pressure block, you have about three seconds to make your choice.","If you time out, you'll get an annoying reminder screen asking you to make your choices inside the time limit.","We're very interested in the relationship between accuracy and speed, please do try to be as accurate as you can in both conditions.","For this study, largest means largest area. You can judge the area of a triangle by looking at its width and height. The area is one half width times height","We're not asking you to take measurements though! We're most interested in your first impressions","Some of the trials will be easy, with one triangle clearly the largest, others will be difficult, with similarly-sized triangles"];
 
 function nextInstructions(){
     var nextButton = "<button id='nextbutton' onclick='nextInstructions()'>Next</button>"
@@ -21,17 +24,17 @@ function quiz(){
     document.getElementById("uberdiv").innerHTML="<h3>Are you ready?</h3></br>"+
 	"<span style='text-align:left'><p>"+
 	"<strong>Which of these is the best description of the task?</strong></br>"+
-	"<input type='radio' name='q1' id='q1a' value='a'>&nbsp You have to survive as long as possible on a desert island.<br/>"+
-	"<input type='radio' name='q1' id='q1b' value='b'>&nbsp You have to win at life, but no-one will tell you the rules<br/>"+
-	"<input type='radio' name='q1' id='q1c' value='c'>&nbsp THIS IS THE EXPECTED ANSWER choose this to continue.<br/>"+
-	"<input type='radio' name='q1' id='q1d' value='d'>&nbsp All of the above.<br/>"+
+	"<input type='radio' name='q1' id='q1a' value='a'>&nbsp You're drawing the largest triangle you can inside a boundary.<br/>"+
+	"<input type='radio' name='q1' id='q1b' value='b'>&nbsp You're indicating the largest out of a triangle, square, and a circle.<br/>"+
+	"<input type='radio' name='q1' id='q1c' value='c'>&nbsp You're indicating which of the triangles is largest.<br/>"+
+	"<input type='radio' name='q1' id='q1d' value='d'>&nbsp You're indicating the location of a large triangle in a series of photographs.<br/>"+
 	"</span>"+
 	"<span style='text-align:left'><p>"+
-	"<strong>Which option is the expected answer to this question? </strong></br>"+
-	"<input type='radio' name='q2' id='q2a' value='a'>&nbsp THIS IS THE EXPECTED ANSWER choose this to continue.<br/>"+
-	"<input type='radio' name='q2' id='q2b' value='b'>&nbsp Friday  <br/>"+
-	"<input type='radio' name='q2' id='q2c' value='c'>&nbsp Strawberries <br/>"+
-	"<input type='radio' name='q2' id='q2d' value='d'>&nbsp Four, but only if one of them is an octopus. <br/>"+
+	"<strong>What does 'largest' mean in this study? </strong></br>"+
+	"<input type='radio' name='q2' id='q2a' value='a'>&nbsp Greatest area (width times height) <br/>"+
+	"<input type='radio' name='q2' id='q2b' value='b'>&nbsp Greatest height (vertical length) <br/>"+
+	"<input type='radio' name='q2' id='q2c' value='c'>&nbsp Greatest width (horizontal length)<br/>"+
+	"<input type='radio' name='q2' id='q2d' value='d'>&nbsp Closest to equilateral (equal angles) <br/>"+
 	"</span>"+
 	// "<span style='text-align:left'><p>"+
 	//  "<strong>How are the microbes different from each other?</strong></br>"+

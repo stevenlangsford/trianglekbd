@@ -193,16 +193,16 @@ function pairobj(x1,y1,x2,y2,template1,template2,stimid){
 	keyslive = true;
 	this.drawtime=Date.now();
 	document.getElementById(targdiv).innerHTML = "<div><h3>Use the arrow keys to select the largest triangle</h3><table style='border:solid 3px black; margin:0 auto'>"+//haha, tables. Oh dear.
-"<tr><td align='left' class='buttontd'>"+
-    "<span class='kbdprompt' id='aside'><img src='img/leftarrow.png' height=50,width=50></span>"+
-    "</td>"+
-    "<td><canvas id='stimleft' width='"+canvassize/1.5+"' height='"+canvassize/1.5+"'></canvas></td>"+
-    "<td><canvas id='stimright' width='"+canvassize/1.5+"' height='"+canvassize/1.5+"'></canvas></td>"+
-    "<td align='right' class='buttontd'>"+
-    "<span class='kbdprompt' id='lside'><img src='img/rightarrow.png' height=50,width=50></span>"+
-    "</td></tr>"+
-    "<tr><td colspan='5'><img src='img/uparrow.png' height=50,width=50> <br/> They're equal</td></tr>"+
-    "</table></div>";
+	"<tr><td align='left' class='buttontd'>"+
+	    "<span class='kbdprompt' id='aside'><img src='img/leftarrow.png' height=50,width=50></span>"+
+	    "</td>"+
+	    "<td><canvas id='stimleft' width='"+canvassize/1.5+"' height='"+canvassize/1.5+"'></canvas></td>"+
+	    "<td><canvas id='stimright' width='"+canvassize/1.5+"' height='"+canvassize/1.5+"'></canvas></td>"+
+	    "<td align='right' class='buttontd'>"+
+	    "<span class='kbdprompt' id='lside'><img src='img/rightarrow.png' height=50,width=50></span>"+
+	    "</td></tr>"+
+	    "<tr><td colspan='5'><img src='img/uparrow.png' height=50,width=50> <br/> They're equal</td></tr>"+
+	    "</table></div>";
 
 	var leftcanvas = document.getElementById('stimleft');
 	var rightcanvas = document.getElementById('stimright');
@@ -219,20 +219,20 @@ function pairobj(x1,y1,x2,y2,template1,template2,stimid){
     }
     
     this.getResponse = function(aresponse){
-		switch(aresponse){
-		case("ArrowLeft"):
-		    choiceindex=this.presentation_position[0];
-		    break;
-		case("ArrowRight"):
-		    choiceindex=this.presentation_position[1];
-		    break;
-		case("ArrowUp"):
-		    choiceindex=2;
-		    break;
-		default:
-		    console.log("Bad response: "+aresponse);
-		    return; //filter to legal responses.
-		}
+	switch(aresponse){
+	case("ArrowLeft"):
+	    choiceindex=this.presentation_position[0];
+	    break;
+	case("ArrowRight"):
+	    choiceindex=this.presentation_position[1];
+	    break;
+	case("ArrowUp"):
+	    choiceindex=2;
+	    break;
+	default:
+	    console.log("Bad response: "+aresponse);
+	    return; //filter to legal responses.
+	}
 	keyslive = false;
 	var output = {};
 	output.ppntID = localStorage.getItem("ppntID");
@@ -270,6 +270,7 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
     this.timelimit = timelimit;
     this.shape_mapping = shuffle(["rightangle","equilateral","skew"]);//note randomized just once at creation... if you repeat stim by revisting a trialobj, this choice will stay the same. No plans to revisit stim though ATM?
     this.orientations = orientations;
+    this.myshapes = [this.shape_mapping[shapetypes[0]],this.shape_mapping[shapetypes[1]],this.shape_mapping[shapetypes[2]]]; //not actually used anywhere ATM but nice to have available for inspection?
     
     //scalefactor converts from stan/brain friendly numbers around 1 to pixels, defined in global vars up top.
     x1=x1*scalefactor;
@@ -280,8 +281,8 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
     y3=y3*scalefactor;
     
     var triangles = [new triangle(x1,y1,this.shape_mapping[shapetypes[0]],this.orientations[0]),
-		       new triangle(x2,y2,this.shape_mapping[shapetypes[1]],this.orientations[1]),
-		       new triangle(x3,y3,this.shape_mapping[shapetypes[2]],this.orientations[2])];
+		     new triangle(x2,y2,this.shape_mapping[shapetypes[1]],this.orientations[1]),
+		     new triangle(x3,y3,this.shape_mapping[shapetypes[2]],this.orientations[2])];
     
     this.triangles = triangles;
     this.roles = roles;
@@ -318,19 +319,19 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	
 
 	this.triangles[this.presentation_position[0]].drawme(document.getElementById('stimcanvas'),
-							jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[0]].drawoffset_x()+d,
-							jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[0]].drawoffset_y(),
-						       "black");
+							     jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[0]].drawoffset_x()+d,
+							     jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[0]].drawoffset_y(),
+							     "black");
 
 	this.triangles[this.presentation_position[1]].drawme(document.getElementById('stimcanvas'),
-							jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[1]].drawoffset_x()+d*Math.cos(2.0/3.0*Math.PI),
-							jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[1]].drawoffset_y()+d*Math.sin(2.0/3.0*Math.PI),
-						       "black");
+							     jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[1]].drawoffset_x()+d*Math.cos(2.0/3.0*Math.PI),
+							     jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[1]].drawoffset_y()+d*Math.sin(2.0/3.0*Math.PI),
+							     "black");
 	
 	this.triangles[this.presentation_position[2]].drawme(document.getElementById('stimcanvas'),
-							jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[2]].drawoffset_x()+d*Math.cos(4.0/3.0*Math.PI),
-							jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[2]].drawoffset_y()+d*Math.sin(4.0/3.0*Math.PI),
-							"black"); //colors useful for diag/dev. Could also be used as a fun manipulation to do things to the similarity structure?
+							     jitter*Math.random()-jitter/2+center_x+this.triangles[this.presentation_position[2]].drawoffset_x()+d*Math.cos(4.0/3.0*Math.PI),
+							     jitter*Math.random()-jitter/2+center_y+this.triangles[this.presentation_position[2]].drawoffset_y()+d*Math.sin(4.0/3.0*Math.PI),
+							     "black"); //colors useful for diag/dev. Could also be used as a fun manipulation to do things to the similarity structure?
 	
 	//diag center pointer:
 	// var ctx = document.getElementById('stimcanvas').getContext('2d');
@@ -409,15 +410,15 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	console.log(output);
 	//TODO: Save output to a db (check 'response' is right: there are different ones for pairs and triples now eh.)
 	//     $.post('/response',{myresponse:JSON.stringify(trials[trialindex])},function(success){
-//     	console.log(success);//For now server returns the string "success" for success, otherwise error message.
+	//     	console.log(success);//For now server returns the string "success" for success, otherwise error message.
 	//     });
 
 	trialindex++;
 	if(output.responseinterval>timelimit){
 	    //show the annoying timeout message:
 	    document.getElementById("uberdiv").innerHTML="<p style='background-color:red; font-size=2em;'>"+
-		"This is a timed block! Please be as accurate as you can without going over the "+Math.round(timelimit/1000)+" second time limit."+
-	    "</p>";
+		"This is a timed block! Please be as accurate as you can without going over the "+Math.round(timelimit/100)+" second time limit."+
+		"</p>";
 	    setTimeout(nextTrial,4000);
 	}else{
 	    drawpausemask_thennexttrial();
@@ -430,9 +431,10 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 //Begin populate trials!
 //TRIAD STIM SETUP PARAMS
 var templatetypes = [[0,0,0],[0,0,1],[0,1,0],[1,0,0],[0,1,2]]; //all match, odd decoy, odd competitor, odd target, nothing-matches.
-var decoy_distances = [.4,.35,.3,.25,.2,.15,.1].map(Math.sqrt); //assume target and competitor are x=1,y=1,area = 1/2, this is brain-friendly and stan-friendly. Actual screen sizes are this * scalefactor. Sqrt just means these are expressed in terms of area, side lengths are targ[x,y]*decoy_distance, area is decoydistance of targ.
-var winner_distances = [1.1,1.2,1.3].map(Math.sqrt); //You don't need as many winner trials as test trials. .1 winners might be hard, interesting for accuracy, .2 and .3 are attn checks.
-var timelimit = 3500;
+var decoy_distances = [.8,.825,.85,.875,.9,.925,.95,.975]; //Target and competitor are x=1,y=.5,area = 1/4, this is brain-friendly and stan-friendly. Actual screen sizes are this * scalefactor. These distances are in 'proportion of full side length', so .9 means 90% of target size in both width and height, ie targ= [1,.5] and distance .9 means decoy is [.9,.45], targ area .25, decoy area .2025, decoy area is .81 of target area (ie .9^2, the square of the side reduction).
+//.8 to .975 means areas 64% to 95% of target.
+var winner_distances = [1.1,1.2,1.3]; //You don't need as many winner trials as test trials. .1 winners might be hard, interesting for accuracy, .2 and .3 are attn checks.
+var timelimit = 2500;
 
 //for each templatetype and each distance, generate an example (attraction-style) stim for time limited an no-limit conditions, randomizing orientations and whether the target is tall or wide.
 
@@ -452,19 +454,20 @@ for(var whichtemplate = 0; whichtemplate < templatetypes.length; whichtemplate++
 	var decoyX = targX*decoy_distances[whichdecoydist];
 	var decoyY = targY*decoy_distances[whichdecoydist];
 	nolimit_trials.push(new trialobj(targX,targY,
-					    compX,compY,
-					    decoyX,decoyY,
-					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
-					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
-					 "att"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,Infinity]));
-		limit_trials.push(new trialobj(targX,targY,
-					    compX,compY,
-					    decoyX,decoyY,
-					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
-					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
-					 "att"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,timelimit]));
-						    
-			       
+					 compX,compY,
+					 decoyX,decoyY,
+					 templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+					 [0,0,0,0],//[Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+					 "att"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+
+					 (Math.round(decoy_distances[whichdecoydist]*100)/100),Infinity));
+	limit_trials.push(new trialobj(targX,targY,
+				       compX,compY,
+				       decoyX,decoyY,
+				       templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+				       [0,0,0,0],//[Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+				       "att"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+(Math.round(decoy_distances[whichdecoydist]*100)/100),timelimit));
+	
+	
     }
     for(var whichwinnerdist = 0; whichwinnerdist<winner_distances.length;whichwinnerdist++){
 	var targlocation = Math.random()<0.5; //if true, targ is tall, if false, targ is wide.
@@ -476,17 +479,17 @@ for(var whichtemplate = 0; whichtemplate < templatetypes.length; whichtemplate++
 	var decoyY = targY*winner_distances[whichwinnerdist];
 
 	nolimit_trials.push(new trialobj(targX,targY,
-					    compX,compY,
-					    decoyX,decoyY,
-					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
-					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
-					 "win"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,Infinity]));
-		limit_trials.push(new trialobj(targX,targY,
-					    compX,compY,
-					    decoyX,decoyY,
-					    templatetypes[whichtemplate],roles=["targ","comp","decoy"],
-					    [Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
-					 "win"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+decoy_distances[whichdecoydist,timelimit]));
+					 compX,compY,
+					 decoyX,decoyY,
+					 templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+					 [0,0,0,0],//[Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+					 "win"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+(Math.round(decoy_distances[whichwinnerdist]*100)/100),Infinity));
+	limit_trials.push(new trialobj(targX,targY,
+				       compX,compY,
+				       decoyX,decoyY,
+				       templatetypes[whichtemplate],roles=["targ","comp","decoy"],
+				       [0,0,0,0],//[Math.floor(Math.random()*4),Math.floor(Math.random()*4),Math.floor(Math.random()*4)],//?? check
+				       "win"+templatetypes[whichtemplate][0]+templatetypes[whichtemplate][1]+templatetypes[whichtemplate][2]+(Math.round(decoy_distances[whichwinnerdist]*100)/100),timelimit));
     }
 }
 
@@ -527,6 +530,11 @@ for(var rep=0;rep<hm_eachpair;rep++){
 shuffle(nolimit_trials)
 shuffle(limit_trials)
 shuffle(pair_trials)
+
+console.log(pair_trials.length+" pair trials") //useful cause you can set trialindex from cl
+console.log(limit_trials.length+" limit trials")
+console.log(nolimit_trials.length+" nolimit trials")
+
 
 pair_trials = [new spacerobj("Please use the arrow keys to pick the triangle with the biggest area, or press the up arrow if they're the same.")].concat(pair_trials);
 nolimit_trials = [new spacerobj("These trials have no time limit. Please use the arrow keys to pick the triangle with the biggest area.")].concat(nolimit_trials)

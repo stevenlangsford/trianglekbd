@@ -1,0 +1,20 @@
+source("readData.R")
+
+##TODO: loop over these
+myid <- demographics.df$ppntID[1]
+
+mypairs.df <- pairs.df%>%filter(ppntID==myid)
+
+datalist <- list(
+    N=nrow(mypairs.df),
+    diff=mypairs.df$area1-mypairs.df$area2,
+    choice=mypairs.df$choicenumber
+    )
+
+fit <- stan(file="seepairs_getests.stan",
+            data=datalist,
+            chains=4,
+            iter=1000)
+
+mysamples <- as.data.frame(extract(fit,permuted=TRUE))
+#This pairs model is too damn different from the triads to be worth any friggin thing. Also, you're expecting areas divided by a scalefactor, right?

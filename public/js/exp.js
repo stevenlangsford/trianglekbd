@@ -258,6 +258,9 @@ function pairobj(x1,y1,x2,y2,template1,template2,stimid){
 
 	//TODO save response to db
 	console.log(output);
+	$.post('/pairresponse',{myresponse:JSON.stringify(output)},function(success){
+	    console.log(success);//For now server returns the string "success" for success, otherwise error message.
+	});
 	
 	trialindex++;
 	drawpausemask_thennexttrial();
@@ -346,34 +349,36 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	var choiceindex; //translate response into an index for 'this'. alts are (choiceindex+1)%3 and (choiceindex+2)%3
 	switch(aresponse){
 	case("ArrowLeft"):
-	    choiceindex=1;
-	    // console.log(
-	    // 	shape_mapping[shapetypes[this.presentation_position[1]]]
-	    // );
+	    choiceindex=this.presentation_position[1];
 	    break;
 	case("ArrowRight"):
-	    choiceindex=0;
-	    // console.log(
-	    // 	shape_mapping[shapetypes[this.presentation_position[0]]]
-	    // 	       )
+	    choiceindex=this.presentation_position[0];
 	    break;
 	case("ArrowUp"):
-	    choiceindex=2;
-	    // console.log(
-	    // 	shape_mapping[shapetypes[this.presentation_position[2]]]
-	    // )
+	    choiceindex=this.presentation_position[2];
 	    break;
 	default:
 	    console.log("Bad response: "+aresponse);
 	    return; //filter to legal responses.
 	}
+
+	//response key coding check:
+	console.log(
+	    "Left:"+this.shape_mapping[shapetypes[this.presentation_position[1]]]+":"+this.triangles[this.presentation.position[1]].area()+"\n"+
+		"Up:"+this.shape_mapping[shapetypes[this.presentation_position[0]]]+":"+this.triangles[this.presentation.position[0]].area()+"\n"+
+		"Right:"+this.shape_mapping[shapetypes[this.presentation_position[2]]]+":"+this.triangles[this.presentation.position[2]].area()+"\n"+
+		"Choicenumber:"+choiceindex+"\n"+
+		"pres.pos:"+this.presentation_position
+	)
+		
+	//
 	keyslive=false;
-	var alt1 = (choiceindex+1)%3;//named just to make assigning stuff to the output obj super readable.
+	var alt1 = (choiceindex+1)%3;//named as vars just to make assigning stuff to the output obj more readable.
 	var alt2 = (choiceindex+2)%3;
 
 	//Things you want to write out: response sensitive.
 	var output = {};
-	output.timelimit = this.timelimit;
+	output.timelimit = ""+this.timelimit;
 	output.seqnumber = trialindex;
 	output.responsekey= aresponse;
 	output.responsetime = Date.now();
@@ -386,6 +391,14 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	output.area_alt1= this.triangles[alt1].area();
 	output.area_alt2=this.triangles[alt2].area();
 
+	//Can't decide which is more confusing, referring to triangles by choice status, role, or position. Solution: do both choice and position.
+	//Visualizing raw choices seems to make most sense by status, stan model makes most sense by position,ordobs become hella confusing otherwise.
+	
+	output.area1 = this.triangles[this.presentation_position[0]].area();
+	output.area2 = this.triangles[this.presentation_position[1]].area();
+	output.area3 = this.triangles[this.presentation_position[2]].area();
+	output.choicenumber = (choiceindex+1); //+1 to be stan friendly.
+	
 	output.role_chosen=this.roles[choiceindex];
 	output.role_alt1=this.roles[alt1];
 	output.role_alt2=this.roles[alt2];
@@ -408,10 +421,11 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	output.presentationshuffle = this.presentation_position;
 
 	console.log(output);
+	
 	//TODO: Save output to a db (check 'response' is right: there are different ones for pairs and triples now eh.)
-	//     $.post('/response',{myresponse:JSON.stringify(trials[trialindex])},function(success){
-	//     	console.log(success);//For now server returns the string "success" for success, otherwise error message.
-	//     });
+	    $.post('/response',{myresponse:JSON.stringify(output)},function(success){
+	    	console.log(success);//For now server returns the string "success" for success, otherwise error message.
+	    });
 
 	trialindex++;
 	if(output.responseinterval>timelimit){
@@ -419,9 +433,9 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	    document.getElementById("uberdiv").innerHTML="<p style='background-color:red; font-size=2em;'>"+
 		"This is a timed block! Please be as accurate as you can without going over the "+Math.round(timelimit/100)+" second time limit."+
 		"</p>";
-	    setTimeout(nextTrial,4000);
+//	    setTimeout(nextTrial,4000);
 	}else{
-	    drawpausemask_thennexttrial();
+//	    drawpausemask_thennexttrial();
 	}
     }
 }//end trialobj

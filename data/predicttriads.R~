@@ -1,0 +1,8 @@
+source("readData.R")
+
+myid <- demographics.df$ppntID[1]
+mytriads <- triads.df%>%filter(ppntID==myid)
+
+datalist = list(hm_stim=nrow(mytriads)*3,
+                
+                HERE BE DRAGONS

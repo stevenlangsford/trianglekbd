@@ -8,7 +8,7 @@ const json2csv = require('json2csv');
 const helmet = require('helmet'); //minimal security best practices. Sets HTTP headers to block first-pass vulnerability sniffing and clickjacking stuff.
 //See: https://github.com/helmetjs/helmet
 //Also: https://expressjs.com/en/advanced/best-practice-security.html
-const favicon = require('serve-favicon')
+const favicon = require('serve-favicon');
 
 //App settings:
 app.use(favicon(__dirname + '/public/psi.ico')); //You might want to change this.
@@ -100,7 +100,27 @@ app.get("/getdemographics",requireLogin,function(req,res){
     pool.end();    
 });
 
-
+app.get("/getpairresponses",requireLogin,function(req,res){
+    var pool = new pg.Pool({connectionString:process.env.DATABASE_URL});
+    pool.connect(function(err,client,done){
+	client.query('select * from pairresponses',function(err,result){
+	    if(err){
+		{console.error(err); res.send("Error "+err);}
+		}else{
+		    //TODO do something sensible if there are no results!
+		    var fields = Object.keys(JSON.parse(result.rows[0].responseobj));
+		    var responses = [];
+		    	   for(var i=0;i<result.rowCount;i++){
+			       responses.push(JSON.parse(result.rows[i].responseobj));
+			   }
+		    var response_csv = json2csv({data: responses, fields:fields});
+		    res.attachment("pairsdata.csv");
+		    res.send(response_csv);
+		}
+	});//end query
+    });
+    pool.end();    
+});
 
 //participant-facing routes for rending pages, including 'index'.
 app.get('/', function (req, res) {
@@ -111,9 +131,19 @@ app.get('/', function (req, res) {
 app.get('/run',function(req,res){
     res.render("pages/exp");
 });
+
+app.get('/run_triads',function(req,res){
+    res.render("pages/exp_triads");
+});
+
 app.post('/exp',function(req,res){
     //not sure why this needs to bounce to a new route to render, but it does seem to. I need to learn some express!
     return res.status(200).send("/run");    
+})
+
+app.post('/exp_triads',function(req,res){
+    //?? bounce bounce why?
+    return res.status(200).send("/run_triads");    
 })
 
 app.get('/done',function(req,res){
@@ -171,7 +201,29 @@ app.post('/response',function(req,res){
     pool.end()
 });
 
-
+//ugh copypaste so bad. Oh well.
+app.post('/pairresponse',function(req,res){
+//save the response in db
+    var pool = new pg.Pool(
+	{connectionString:process.env.DATABASE_URL}
+    )    
+    // connection using created pool
+    pool.connect(function(err, client, done) {
+    	client.query('insert into pairresponses values ($1,$2)', //NOTE this assumes table responses exists with cols 'time', 'responseobj' !
+		     [Date.now(),
+		     req.body.myresponse],
+    		     function(err, result){
+    			 if (err)
+    			 {console.error(err); res.send("Error " + err); } //For now the client just prints the error to the console. What's ideal?
+    			 else
+    			 { // response.render('pages/db', {results: result.rows});
+    			     res.send("success");
+    			 }
+    		     });//end query
+	done();
+    });
+    pool.end()
+});
 
 //Ok, run this thing!
 app.listen(app.get('port'), function() {

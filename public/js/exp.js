@@ -346,32 +346,29 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
     
 
     this.getResponse = function(aresponse){
-	var choiceindex; //translate response into an index for 'this'. alts are (choiceindex+1)%3 and (choiceindex+2)%3
+	//ok, so choiceindex indexes into this.triangles, and is useful for pulling properties of the choice and alts easily.
+	//BUT choicelocation is used in the stan model. Basically so that there'll be a nice mixture of 1,2,3 choices: I guess it might not actually be a problem to associate choicenumber with role or selection status, but it makes me very nervous, incidental structure  in the input to a probablistic program? Let's not. this.triangles is in role order, if that was used 1,2,3 would always be targ, comp, decoy. 
+	var choiceindex;
+	var choicelocation;
+	
 	switch(aresponse){
 	case("ArrowLeft"):
-	    choiceindex=this.presentation_position[1];
+	    choiceindex=this.presentation_position[1]; 
+	    choicelocation = 2;
 	    break;
 	case("ArrowRight"):
 	    choiceindex=this.presentation_position[0];
+	    choicelocation = 1;
 	    break;
 	case("ArrowUp"):
 	    choiceindex=this.presentation_position[2];
+	    choicelocation = 3;
 	    break;
 	default:
 	    console.log("Bad response: "+aresponse);
 	    return; //filter to legal responses.
 	}
 
-	//response key coding check:
-	console.log(
-	    "Left:"+this.shape_mapping[shapetypes[this.presentation_position[1]]]+":"+this.triangles[this.presentation.position[1]].area()+"\n"+
-		"Up:"+this.shape_mapping[shapetypes[this.presentation_position[0]]]+":"+this.triangles[this.presentation.position[0]].area()+"\n"+
-		"Right:"+this.shape_mapping[shapetypes[this.presentation_position[2]]]+":"+this.triangles[this.presentation.position[2]].area()+"\n"+
-		"Choicenumber:"+choiceindex+"\n"+
-		"pres.pos:"+this.presentation_position
-	)
-		
-	//
 	keyslive=false;
 	var alt1 = (choiceindex+1)%3;//named as vars just to make assigning stuff to the output obj more readable.
 	var alt2 = (choiceindex+2)%3;
@@ -387,32 +384,46 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	output.timedout = output.responseinterval > output.timelimit;
 	output.ppntID = localStorage.getItem("ppntID");
 	
-	output.area_chosen= this.triangles[choiceindex].area();
-	output.area_alt1= this.triangles[alt1].area();
-	output.area_alt2=this.triangles[alt2].area();
 
 	//Can't decide which is more confusing, referring to triangles by choice status, role, or position. Solution: do both choice and position.
-	//Visualizing raw choices seems to make most sense by status, stan model makes most sense by position,ordobs become hella confusing otherwise.
-	
-	output.area1 = this.triangles[this.presentation_position[0]].area();
-	output.area2 = this.triangles[this.presentation_position[1]].area();
-	output.area3 = this.triangles[this.presentation_position[2]].area();
-	output.choicenumber = (choiceindex+1); //+1 to be stan friendly.
-	
-	output.role_chosen=this.roles[choiceindex];
-	output.role_alt1=this.roles[alt1];
-	output.role_alt2=this.roles[alt2];
+	//simplicity through redundancy, right? Complexity management 101, works best if accompanied by animal sacrifices.
 
-	output.NS_chosen=this.triangles[choiceindex].NorthSouth();
-	output.EW_chosen=this.triangles[choiceindex].EastWest();
-	output.NS_alt1=this.triangles[alt1].NorthSouth();
-	output.EW_alt1=this.triangles[alt1].EastWest();
-	output.NS_alt2=this.triangles[alt2].NorthSouth();
-	output.EW_alt2=this.triangles[alt2].EastWest();
+	//location format:
+	output.choicenumber = choicelocation; //the 1,2,3 numbering above means location1, location2, location3. Not related to role or choice status, is the point.
+	output.area1 = Math.round(this.triangles[this.presentation_position[0]].area()); //decimals not just meaningless, they're also buggy when you get 2500!=2500 later because they're different in the 14th decimal place but print the same on the screen. Ugh.
+	output.area2 = Math.round(this.triangles[this.presentation_position[1]].area());
+	output.area3 = Math.round(this.triangles[this.presentation_position[2]].area());
 
-	output.template_chosen= this.shape_mapping[shapetypes[this.presentation_position[choiceindex]]];
-	output.template_alt1= this.shape_mapping[shapetypes[this.presentation_position[alt1]]];
-	output.template_alt2= this.shape_mapping[shapetypes[this.presentation_position[alt2]]];
+	output.NS1 = this.triangles[this.presentation_position[0]].NorthSouth();
+	output.NS2 = this.triangles[this.presentation_position[1]].NorthSouth();
+	output.NS3 = this.triangles[this.presentation_position[2]].NorthSouth();
+	output.EW1 = this.triangles[this.presentation_position[0]].EastWest();
+	output.EW2 = this.triangles[this.presentation_position[1]].EastWest();
+	output.EW3 = this.triangles[this.presentation_position[2]].EastWest();
+
+	output.template1 = this.triangles[this.presentation_position[0]].templatetype;
+	output.template2 = this.triangles[this.presentation_position[1]].templatetype;
+	output.template3 = this.triangles[this.presentation_position[2]].templatetype;
+
+	//choice status format:
+	output.area_chosen = Math.round(this.triangles[choiceindex].area());
+	output.area_alt1 = Math.round(this.triangles[alt1].area());
+	output.area_alt2 = Math.round(this.triangles[alt2].area());
+	
+	output.role_chosen = this.roles[choiceindex];
+	output.role_alt1 = this.roles[alt1];
+	output.role_alt2 = this.roles[alt2];
+
+	output.NS_chosen = this.triangles[choiceindex].NorthSouth();
+	output.EW_chosen = this.triangles[choiceindex].EastWest();
+	output.NS_alt1 = this.triangles[alt1].NorthSouth();
+	output.EW_alt1 = this.triangles[alt1].EastWest();
+	output.NS_alt2 = this.triangles[alt2].NorthSouth();
+	output.EW_alt2 = this.triangles[alt2].EastWest();
+
+	output.template_chosen = this.triangles[choiceindex].templatetype;
+	output.template_alt1 = this.triangles[alt1].templatetype;
+	output.template_alt2 = this.triangles[alt2].templatetype;
 
 	output.orientation_chosen = this.triangles[choiceindex].orientation;
 	output.orientation_alt1 = this.triangles[alt1].orientation;
@@ -422,7 +433,7 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 
 	console.log(output);
 	
-	//TODO: Save output to a db (check 'response' is right: there are different ones for pairs and triples now eh.)
+	//save to db
 	    $.post('/response',{myresponse:JSON.stringify(output)},function(success){
 	    	console.log(success);//For now server returns the string "success" for success, otherwise error message.
 	    });
@@ -433,9 +444,9 @@ function trialobj(x1,y1,x2,y2,x3,y3,shapetypes,roles,orientations,stimid,timelim
 	    document.getElementById("uberdiv").innerHTML="<p style='background-color:red; font-size=2em;'>"+
 		"This is a timed block! Please be as accurate as you can without going over the "+Math.round(timelimit/100)+" second time limit."+
 		"</p>";
-//	    setTimeout(nextTrial,4000);
+	    setTimeout(nextTrial,4000);
 	}else{
-//	    drawpausemask_thennexttrial();
+	    drawpausemask_thennexttrial();
 	}
     }
 }//end trialobj

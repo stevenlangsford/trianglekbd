@@ -1,6 +1,6 @@
 data{
   int hm_stim; //individual observables, ie options, not trials.
-  real calcobs[hm_stim];//of each option
+  real calcobs[hm_stim];//of each option, true area (ie mean of dist)
   real calcobs_noise;// assume this fit is for one ppnt and they know their own noise level.
   int trial[hm_stim]; //1,1,1,2,2,2,3,3,3 etc, which you could just work out from row number if floor() returned an int, but it doesn't, so it can't be an index.
   int hm_ordobs;

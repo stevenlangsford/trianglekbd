@@ -1,7 +1,6 @@
 library(tidyverse)
 library(rstan)
 library(shinystan)
-rm(list=ls()) #don't forget this is here.
 
 #just here because this has the library loads, now it's become a generic setup point.
 options(mc.cores = parallel::detectCores())

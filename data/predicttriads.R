@@ -61,3 +61,55 @@ fit_allords <- stan(file="triad_choices.stan",
             control=list(max_treedepth=15,adapt_delta=.9)
             )
 
+ordobs_matching.df <- ordobs.df%>%filter(matchstatus);
+datalist_matchingords = list(hm_stim=nrow(calcobs.df),
+                calcobs=calcobs.df$area,
+                calcobs_noise= .1,#TODO
+                trial=calcobs.df$trial,
+                hm_ordobs=nrow(ordobs_matching.df),
+                ordobs_noise = .1,#TODO
+                tolerance = .1, #TODO
+                ordobs_trial = ordobs_matching.df$trial,
+                ordobs_option1 = ordobs_matching.df$option1,
+                ordobs_option2 = ordobs_matching.df$option2,
+                ordobs_attribute = ordobs_matching.df$attribute,
+                ordobs_diff = ordobs_matching.df$diff
+                )
+
+fit_matchords <- stan(file="triad_choices.stan",
+            data=datalist_matchingords,
+            iter=1000,
+            chains=4,
+            init=function(){
+                initattrs <- rep(1.5,nrow(calcobs.df)*2) #Need to consider what counts as a good init value. targ/comp are 1:2 and 2:1 after scalingfactor.
+                dim(initattrs)=c(nrow(calcobs.df),2)
+                list(est_option_attribute=initattrs)
+            },##Sanity check on these inits: hist(with(triadsdata.df,c(scaled.NS1,scaled.NS2,scaled.NS3,scaled.EW1,scaled.EW2,scaled.EW3)))
+            control=list(max_treedepth=15,adapt_delta=.9)
+            )
+
+datalist_noords = list(hm_stim=nrow(calcobs.df),
+                calcobs=calcobs.df$area,
+                calcobs_noise= .1,#TODO
+                trial=calcobs.df$trial#,
+                ## hm_ordobs=nrow(ordobs_matching.df),
+                ## ordobs_noise = .1,#TODO
+                ## tolerance = .1, #TODO
+                ## ordobs_trial = ordobs_matching.df$trial,
+                ## ordobs_option1 = ordobs_matching.df$option1,
+                ## ordobs_option2 = ordobs_matching.df$option2,
+                ## ordobs_attribute = ordobs_matching.df$attribute,
+                ## ordobs_diff = ordobs_matching.df$diff
+                )
+
+fit_noords <- stan(file="triad_choices_noords.stan",
+            data=datalist_noords,
+            iter=1000,
+            chains=4,
+            init=function(){
+                initattrs <- rep(1.5,nrow(calcobs.df)*2) #Need to consider what counts as a good init value. targ/comp are 1:2 and 2:1 after scalingfactor.
+                dim(initattrs)=c(nrow(calcobs.df),2)
+                list(est_option_attribute=initattrs)
+            },##Sanity check on these inits: hist(with(triadsdata.df,c(scaled.NS1,scaled.NS2,scaled.NS3,scaled.EW1,scaled.EW2,scaled.EW3)))
+            control=list(max_treedepth=15,adapt_delta=.9)
+            )

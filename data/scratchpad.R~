@@ -1,0 +1,16 @@
+library(tidyverse)
+library(rstan)
+library(shinystan)
+rm(list=ls())
+
+source("readData.R")
+datanames = ls()
+load("test1.RData")
+rm(list=setdiff(ls(),c(datanames,"fit_allords","fit_matchords","fit_noords")))
+
+myfit <- fit_allords #TODO pass as arg
+mysamples <- as.data.frame(extract(myfit,permuted=TRUE))
+
+for(i in 1:nrow(triad.df)){
+    
+}
